@@ -1,7 +1,6 @@
 import com.miu.redblacktreevisualization.core.BST
 
-val tree = BST.leaf(None, 3)
-
+val tree = BST.root(3)
 
 val tree1 = tree.insert(1)
 
