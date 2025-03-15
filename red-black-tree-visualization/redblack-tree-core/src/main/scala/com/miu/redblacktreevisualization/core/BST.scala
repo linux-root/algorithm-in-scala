@@ -1,8 +1,7 @@
 package com.miu.redblacktreevisualization.core
 
 import com.miu.redblacktreevisualization.core.BST.*
-import com.miu.redblacktreevisualization.core.BST.Violation.StraightGPC
-import com.miu.redblacktreevisualization.core.BST.Violation.BendedGPC
+import com.miu.redblacktreevisualization.core.BST.Violation.*
 
 sealed trait BST {
 
@@ -22,9 +21,23 @@ sealed trait BST {
 
   def isRoot: Boolean = parent.isEmpty
 
+  def root: Node
+
   def insert(value: Int): BST //NOTE: because insert use updateLeft/updateRight, then return type is forced to be BST
   
   def resolve(violation: Violation): BST = 
+    def resolveRStraightGPC(root: Node, grandparent: Node): BST =
+      if root == grandparent then {
+        grandparent.right match { // boiler-plate. Can improve by re-design BST
+          case nodeP: Node =>
+            val updatedG = grandparent.updatedColor(Color.Red).updatedRight(Empty(grandparent)) // Right of G is changed from P to Empty
+            val updatedRoot = BST.root(nodeP.value, Some(updatedG), Some(nodeP.right)) // root value became P.value, left of P become G, keep right of P the same
+            updatedRoot
+          case _ => 
+            root
+        }
+      } else ???
+
     violation match {
       case Violation.RedRoot(Node(parent, value, color, left, right)) =>
         lazy val node: Node = Node(parent, value, Color.Black, left.updatedParent(node), right.updatedParent(node))
@@ -47,8 +60,15 @@ sealed trait BST {
           case _ =>
             this
 
-
-      case _ => this
+      case Violation.RStraightGPC(node) =>
+        // parent take care children and grandparent
+        // update and return root
+        node.parent.flatMap(_.parent) match
+           case Some(grandparent) =>
+             resolveRStraightGPC(this.root, grandparent)
+           case _ =>
+             // TODO: no GGP
+             this
     }
 
   def uncle: Option[Node] = 
@@ -90,9 +110,9 @@ sealed trait BST {
                 // Check for StraightGPC violation
                 parent.parent match {
                   case Some(grandparent) if parent == grandparent.left =>
-                    if (node == parent.left) then Some(StraightGPC(node)) else Some(BendedGPC(node))
+                    if (node == parent.left) then Some(LStraightGPC(node)) else Some(BendedGPC(node))
                   case Some(grandparent) if parent == grandparent.right =>
-                    if (node == parent.right) then Some(StraightGPC(node)) else Some(BendedGPC(node))
+                    if (node == parent.right) then Some(RStraightGPC(node)) else Some(BendedGPC(node))
                   case _ =>
                     None
                 }
@@ -131,8 +151,8 @@ object BST {
       lazy val result: Node = Node(Some(parent), value, color, BST.Empty(result), BST.Empty(result))
       result
 
-    def root(value: Int): Node =
-      lazy val result: Node = Node(None, value, Color.Black, BST.Empty(result), BST.Empty(result))
+    def root(value: Int, left: Option[BST] = None, right: Option[BST] = None): Node =
+      lazy val result: Node = Node(None, value, Color.Black, left.map(_.updatedParent(result)).getOrElse(BST.Empty(result)), right.map(_.updatedParent(result)).getOrElse(BST.Empty(result)))
       result
 
     enum Color {
@@ -143,18 +163,22 @@ object BST {
       override def toString(): String = {
         this match {
           case RedUncle(_) => "RedUncle"
-          case StraightGPC(_) => "StraightGPC"
+          case LStraightGPC(_) => "LStraightGPC"
+          case RStraightGPC(_) => "RStraightGPC"
           case BendedGPC(_) => "BendedGPC"
           case RedRoot(_) => "RedRoot"
         }
       }
       def node: Node
       case RedUncle(node: Node)
-      case StraightGPC(node: Node)
+      case LStraightGPC(node: Node)
+      case RStraightGPC(node: Node)
       case BendedGPC(node: Node)
       case RedRoot(node: Node)
     }
     case class Empty(private val _parent: Node) extends BST {
+      override def root: Node =
+        _parent.root
 
       override def updatedColor(newColor: Color): BST = this //Empty can't change its color
 
@@ -190,6 +214,14 @@ object BST {
           sameType.value == value //TODO: is this enough?
         case _ => false
       }
+
+      override def root: Node =
+        parent  match {
+          case None =>
+            this
+          case Some(p) =>
+            p.root
+        }
 
       override def findNode(v: Int): Option[Node] = 
         if v == value then Some(this)

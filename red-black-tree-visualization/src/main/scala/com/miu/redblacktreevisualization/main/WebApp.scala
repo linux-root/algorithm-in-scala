@@ -57,7 +57,7 @@ object WebApp extends TyrianIOApp[Msg, Model]:
     case Msg.Insert(value) =>
       val updatedTree = model.bst.map(_.insert(value)).getOrElse(BST.root(value))
       val updatedModel = model.copy(bst = Some(updatedTree)).copy(violation = updatedTree.violation(value))
-      (updatedModel, updatedModel.refreshTreeCmd |+| PrettyLogger.info(s"$updatedTree") )
+      (updatedModel, updatedModel.refreshTreeCmd)
 
     case Msg.ResolveViolation =>
       val updatedModel = model.resolveViolation
