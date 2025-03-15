@@ -1,6 +1,8 @@
 package com.miu.redblacktreevisualization.core
 
 import com.miu.redblacktreevisualization.core.BST.*
+import com.miu.redblacktreevisualization.core.BST.Violation.StraightGPC
+import com.miu.redblacktreevisualization.core.BST.Violation.BendedGPC
 
 sealed trait BST {
   def updatedLeft(left : => BST): BST
@@ -50,6 +52,7 @@ sealed trait BST {
             case uncle @ Node(_, _, _, _, _) => Some(uncle)
             case Empty(_) => None
 
+    // NOTE: we assume that lastInsertedValue is RED
     findNode(lastInsertedValue) match
       case None => None
       case Some(node) =>
@@ -65,8 +68,14 @@ sealed trait BST {
                 Some(Violation.RedUncle(node))
               case _ =>
                 // Check for StraightGPC violation
-                println(s"Check for StraightGPC violation. Parent color: ${parent}")
-                Some(Violation.StraightGPC(node))
+                parent.parent match {
+                  case Some(grandparent) if parent == grandparent.left =>
+                    if (node == parent.left) then Some(StraightGPC(node)) else Some(BendedGPC(node))
+                  case Some(grandparent) if parent == grandparent.right =>
+                    if (node == parent.right) then Some(StraightGPC(node)) else Some(BendedGPC(node))
+                  case _ =>
+                    None
+                }
           case _ => None
   }
   
