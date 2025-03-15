@@ -12,99 +12,125 @@ import * as d3 from 'd3';
 
 export class TreeRenderer {
   constructor(containerId, options = {}) {
-    // Default configuration
     this.config = {
       width: 1000,
       height: 500,
-      margin: { top: 40, right: 90, bottom: 50, left: 90 },
       nodeRadius: 20,
+      margin: { top: 40, right: 90, bottom: 50, left: 90 },
       ...options
     };
 
-    // Calculate actual dimensions
-    this.width = this.config.width - this.config.margin.left - this.config.margin.right;
-    this.height = this.config.height - this.config.margin.top - this.config.margin.bottom;
+    // Set up the SVG container with margins
+    const width = this.config.width - this.config.margin.left - this.config.margin.right;
+    const height = this.config.height - this.config.margin.top - this.config.margin.bottom;
 
-    // Initialize SVG container
     this.svg = d3.select(`#${containerId}`)
       .append('svg')
       .attr('width', this.config.width)
       .attr('height', this.config.height)
       .append('g')
       .attr('transform', `translate(${this.config.margin.left},${this.config.margin.top})`);
+
+    // Store dimensions for tree layout
+    this.dimensions = { width, height };
   }
 
   /**
-   * Converts Scala.js BST format to D3.js hierarchical format
-   * @private
+   * Converts BST format to D3.js hierarchical format
+   * Adds invisible nodes to maintain consistent tree structure
    */
   _convertToD3Format(node) {
-    if (node.$type === "Empty") {
-      return null;
+    if (node.$type === "Empty") return null;
+
+    const leftChild = this._convertToD3Format(node.left);
+    const rightChild = this._convertToD3Format(node.right);
+    const children = [];
+
+    // Handle left side
+    if (leftChild || rightChild) {
+      children.push(leftChild || { value: '', color: 'transparent', isInvisible: true });
+    }
+
+    // Handle right side
+    if (rightChild || leftChild) {
+      children.push(rightChild || { value: '', color: 'transparent', isInvisible: true });
     }
 
     return {
       value: node.value,
       color: node.color === "Red" ? "red" : "black",
-      children: [
-        this._convertToD3Format(node.left),
-        this._convertToD3Format(node.right)
-      ].filter(Boolean) // Remove null children
+      children: children
     };
   }
 
   /**
-   * Renders a Binary Search Tree defined in Scala.js
-   * @param {Object} bst - The Binary Search Tree in Scala.js format
-   *                     - Can be either Empty or Node(value, color, left, right)
+   * Renders the Binary Search Tree
    */
   render(bst) {
-    console.log(JSON.stringify(bst));
-    // Clear the SVG
-    this.svg.selectAll('*').remove();
+    if (bst.$type === "Empty") return;
 
-    // If the tree isempty, return early
-    if (bst.$type === "Empty") {
-      return;
-    }
-
-    // Convert the BST to D3 hierarchical format
-    const d3Data = this._convertToD3Format(bst);
-    const root = d3.hierarchy(d3Data);
-
-    // Create the tree layout
-    const treeLayout = d3.tree().size([this.width, this.height]);
+    // Set up the tree data
+    const root = d3.hierarchy(this._convertToD3Format(bst));
+    const treeLayout = d3.tree()
+      .size([this.dimensions.width, this.dimensions.height]);
     const treeData = treeLayout(root);
 
-    // Add links between nodes
+    // Clear previous content
+    this.svg.selectAll('*').remove();
+
+    // Draw links
     this.svg.selectAll('.link')
       .data(treeData.links())
       .enter()
       .append('path')
-      .attr('class', 'link bg-gray-500')
-      .attr('d', d3.linkVertical()
-        .x(d => d.x)
-        .y(d => d.y));
+      .attr('class', 'link')
+      .style('opacity', d => d.target.data.isInvisible ? 0 : 1)
+      .attr('d', d => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`);
 
-    // Add nodes
+    // Create node groups
     const nodes = this.svg.selectAll('.node')
       .data(treeData.descendants())
       .enter()
       .append('g')
       .attr('class', 'node')
+      .style('opacity', d => d.data.isInvisible ? 0 : 1)
       .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    // Add circles for nodes
+    // Add circles with drop shadow
+    const defs = this.svg.append('defs');
+
+    // Define drop shadow filter
+    const filter = defs.append('filter')
+      .attr('id', 'drop-shadow')
+      .attr('height', '130%');
+
+    filter.append('feGaussianBlur')
+      .attr('in', 'SourceAlpha')
+      .attr('stdDeviation', 2)
+      .attr('result', 'blur');
+
+    filter.append('feOffset')
+      .attr('in', 'blur')
+      .attr('dx', 0)
+      .attr('dy', 2)
+      .attr('result', 'offsetBlur');
+
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode')
+      .attr('in', 'offsetBlur');
+    feMerge.append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
+    // Add circles with shadow
     nodes.append('circle')
       .attr('r', this.config.nodeRadius)
       .style('fill', d => d.data.color)
-      .style('stroke', '#000');
+      .style('filter', 'url(#drop-shadow)');
 
-    // Add text to nodes
+    // Add labels
     nodes.append('text')
       .attr('dy', '0.35em')
       .attr('text-anchor', 'middle')
-      .style('fill', d => d.data.color === "black" ? 'white' : 'black')
       .text(d => d.data.value);
   }
 
@@ -116,12 +142,11 @@ export class TreeRenderer {
   resize(width, height) {
     this.config.width = width;
     this.config.height = height;
-    this.width = width - this.config.margin.left - this.config.margin.right;
-    this.height = height - this.config.margin.top - this.config.margin.bottom;
+    this.dimensions.width = width - this.config.margin.left - this.config.margin.right;
+    this.dimensions.height = height - this.config.margin.top - this.config.margin.bottom;
 
     this.svg.select('svg')
       .attr('width', this.config.width)
       .attr('height', this.config.height);
   }
-
 }
