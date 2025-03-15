@@ -97,15 +97,13 @@ sealed trait BST {
 
 
 object BST {
-    def empty(parent: Node): Empty =
-      Empty(Some(parent))
 
     def leaf(parent: Node, value: Int, color: Color = Color.Red): Node =
-      lazy val result: Node = Node(Some(parent), value, color, BST.Empty(Some(result)), BST.Empty(Some(result)))
+      lazy val result: Node = Node(Some(parent), value, color, BST.Empty(result), BST.Empty(result))
       result
 
     def root(value: Int): Node =
-      lazy val result: Node = Node(None, value, Color.Black, BST.Empty(Some(result)), BST.Empty(Some(result)))
+      lazy val result: Node = Node(None, value, Color.Black, BST.Empty(result), BST.Empty(result))
       result
 
     enum Color {
@@ -119,11 +117,13 @@ object BST {
       case BendedGPC(node: Node)
       case RedRoot(node: Node)
     }
-    case class Empty(parent: Option[Node]) extends BST {
+    case class Empty(private val _parent: Node) extends BST {
+
+      override def parent: Option[Node] = Some(_parent)
 
       override def findNode(value: Int): Option[Node] = None
 
-      override def updatedParent(parent: => Node): BST = Empty(Some(parent)) 
+      override def updatedParent(parent: => Node): BST = Empty(parent) 
 
       override def color: Color = Color.Red
       override def updatedLeft(left : => BST): BST = this
