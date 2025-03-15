@@ -26,6 +26,19 @@ sealed trait BST {
   def insert(value: Int): BST //NOTE: because insert use updateLeft/updateRight, then return type is forced to be BST
   
   def resolve(violation: Violation): BST = 
+
+    def resolveLStraightGPC(root: Node, grandparent: Node): BST =
+      if root == grandparent then {
+        grandparent.left match { // boiler-plate. Can improve by re-design BST
+          case nodeP: Node =>
+            val updatedG = grandparent.updatedColor(Color.Red).updatedLeft(Empty(grandparent)) // Right of G is changed from P to Empty
+            val updatedRoot = BST.root(nodeP.value, Some(nodeP.left), Some(updatedG)) // root value became P.value, left of P become G, keep right of P the same
+            updatedRoot
+          case _ => 
+            root
+        }
+      } else ???
+
     def resolveRStraightGPC(root: Node, grandparent: Node): BST =
       if root == grandparent then {
         grandparent.right match { // boiler-plate. Can improve by re-design BST
@@ -61,11 +74,16 @@ sealed trait BST {
             this
 
       case Violation.RStraightGPC(node) =>
-        // parent take care children and grandparent
-        // update and return root
         node.parent.flatMap(_.parent) match
            case Some(grandparent) =>
              resolveRStraightGPC(this.root, grandparent)
+           case _ =>
+             // TODO: no GGP
+             this
+      case Violation.LStraightGPC(node) =>
+        node.parent.flatMap(_.parent) match
+           case Some(grandparent) =>
+             resolveLStraightGPC(this.root, grandparent)
            case _ =>
              // TODO: no GGP
              this
