@@ -5,6 +5,8 @@ import com.miu.redblacktreevisualization.core.BST.Violation.*
 
 sealed trait BST {
 
+  def label: Option[String]
+
   def updatedColor(newColor: Color): BST
 
   def updatedLeft(left : => BST): BST
@@ -52,8 +54,8 @@ sealed trait BST {
       } else ???
 
     violation match {
-      case Violation.RedRoot(Node(parent, value, color, left, right)) =>
-        lazy val node: Node = Node(parent, value, Color.Black, left.updatedParent(node), right.updatedParent(node))
+      case Violation.RedRoot(Node(parent, value, color, label, left, right)) =>
+        lazy val node: Node = Node(parent, value, Color.Black, label, left.updatedParent(node), right.updatedParent(node))
         node
   
       case Violation.RedUncle(node) => 
@@ -140,14 +142,14 @@ sealed trait BST {
   def isValid: Boolean =
     def checkBlackHeight(node: BST): Option[Int] =
       node match
-        case Node(_, _, color, left, right) =>
+        case Node(_, _, color,_, left, right) =>
           // Check if both children have same black height
           (checkBlackHeight(left), checkBlackHeight(right)) match
             case (Some(lh), Some(rh)) if lh == rh =>
               // If node is red, both children must be black
               if color == Color.Red then
                 (left, right) match
-                  case (Node(_, _, Color.Black, _, _), Node(_, _, Color.Black, _, _)) => Some(lh)
+                  case (Node(_, _, Color.Black,_ , _, _), Node(_, _, Color.Black,_ , _, _)) => Some(lh)
                   case (Empty, Empty) => Some(lh)
                   case _ => None
               else Some(lh + 1)  // Count black node
@@ -157,7 +159,7 @@ sealed trait BST {
     // Root must be black
     this match
       case Empty(_) => true
-      case Node(_, _, Color.Black, _, _) => checkBlackHeight(this).isDefined
+      case Node(_, _, Color.Black, _ , _, _) => checkBlackHeight(this).isDefined
       case _ => false
   
 }
@@ -165,12 +167,12 @@ sealed trait BST {
 
 object BST {
 
-    def leaf(parent: Node, value: Int, color: Color = Color.Red): Node =
-      lazy val result: Node = Node(Some(parent), value, color, BST.Empty(result), BST.Empty(result))
+    def leaf(parent: Node, value: Int, label: Option[String] = None, color: Color = Color.Red): Node =
+      lazy val result: Node = Node(Some(parent), value, color, label, BST.Empty(result), BST.Empty(result))
       result
 
     def root(value: Int, left: Option[BST] = None, right: Option[BST] = None): Node =
-      lazy val result: Node = Node(None, value, Color.Black, left.map(_.updatedParent(result)).getOrElse(BST.Empty(result)), right.map(_.updatedParent(result)).getOrElse(BST.Empty(result)))
+      lazy val result: Node = Node(None, value, Color.Black, None, left.map(_.updatedParent(result)).getOrElse(BST.Empty(result)), right.map(_.updatedParent(result)).getOrElse(BST.Empty(result)))
       result
 
     enum Color {
@@ -195,6 +197,9 @@ object BST {
       case RedRoot(node: Node)
     }
     case class Empty(private val _parent: Node) extends BST {
+
+      override val label: Option[String] = None
+
       override def root: Node =
         _parent.root
 
@@ -214,12 +219,12 @@ object BST {
           case None =>
             BST.root(value)
           case Some(p) =>
-            BST.leaf(p, value) // NOTE: link the leaf directly to parent of empty
+            BST.leaf(p, value, Some("G")) // NOTE: link the leaf directly to parent of empty
         }
       override def toString: String = "NIL"
     }
     
-    class Node(p: => Option[Node], val value: Int, override val color: Color, l: => BST, r: => BST) extends BST {
+    class Node(p: => Option[Node], val value: Int, override val color: Color, override val label: Option[String], l: => BST, r: => BST) extends BST {
       lazy val parent: Option[Node] = p // NOTE: lazy to avoid stack overflow
 
       lazy val left: BST = l // NOTE: lazy to avoid stack overflow
@@ -247,22 +252,22 @@ object BST {
         else right.findNode(v)
 
       override def updatedParent(newParent: => Node): BST = {
-        lazy val result: Node = new Node(Some(newParent), value, color, left.updatedParent(result), right.updatedParent(result))
+        lazy val result: Node = new Node(Some(newParent), value, color, label, left.updatedParent(result), right.updatedParent(result))
         result
       }
 
       override def updatedLeft(newLeft : => BST): BST = {
-        lazy val result: Node = new Node(parent, value, color, newLeft.updatedParent(result), right.updatedParent(result))
+        lazy val result: Node = new Node(parent, value, color, label, newLeft.updatedParent(result), right.updatedParent(result))
         result
      }
 
       override def updatedRight(newRight : => BST): BST = {
-        lazy val result: Node = new Node(parent, value, color, left.updatedParent(result), newRight.updatedParent(result))
+        lazy val result: Node = new Node(parent, value, color, label, left.updatedParent(result), newRight.updatedParent(result))
         result
       }
 
       def updatedColor(newColor: Color): BST =
-        lazy val result: Node = new Node(parent, value, newColor, left.updatedParent(result), right.updatedParent(result))
+        lazy val result: Node = new Node(parent, value, newColor, label, left.updatedParent(result), right.updatedParent(result))
         result
 
       def insert(newValue: Int): BST = {
@@ -286,8 +291,8 @@ object BST {
     }
 
     object Node {
-      def unapply(node: Node): Option[(Option[Node], Int, Color, BST, BST)] = {
-        Some((node.parent, node.value, node.color, node.left, node.right))
+      def unapply(node: Node): Option[(Option[Node], Int, Color, Option[String], BST, BST)] = {
+        Some((node.parent, node.value, node.color, node.label, node.left, node.right))
       }
     }
 

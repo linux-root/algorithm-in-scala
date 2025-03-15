@@ -64,7 +64,7 @@ object WebApp extends TyrianIOApp[Msg, Model]:
       (updatedModel, updatedModel.refreshTreeCmd)
 
     case Msg.InsertRandom =>
-      (model, Cmd.Run(Sync[IO].delay(Random.nextInt(1000)))(Msg.Insert(_)))
+      (model, Cmd.Run(Sync[IO].delay(Random.nextInt(100)))(Msg.Insert(_)))
 
     case Msg.UpdateInputValue(value)=>
       (model.copy(input = value),Cmd.None)

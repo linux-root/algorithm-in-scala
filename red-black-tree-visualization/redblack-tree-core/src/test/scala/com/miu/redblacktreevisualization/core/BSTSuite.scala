@@ -15,7 +15,7 @@ class BSTSuite extends AnyFunSuite {
 
   test("Find node"){
     lazy val g = BST.root(5).updatedRight(p)
-    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, BST.Empty(p), c)
+    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None, BST.Empty(p), c)
     lazy val c: BST.Node = BST.leaf(p, 42)
     assert(g.findNode(42).contains(c))
   }
@@ -23,7 +23,7 @@ class BSTSuite extends AnyFunSuite {
   test("Violation : No red uncle straight GPC"){
     // Create tree manually, usually we don't do this, we insert/delete instead
     lazy val g = BST.root(5).updatedRight(p)
-    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, BST.Empty(p), c)
+    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None, BST.Empty(p), c)
     lazy val c: BST.Node = BST.leaf(p, 42)
 
     val expectedViolation = Violation.RStraightGPC(c)
@@ -32,7 +32,7 @@ class BSTSuite extends AnyFunSuite {
 
   test("Violation : No red uncle bended GPC"){
     lazy val g = BST.root(5).updatedRight(p)
-    lazy val p: BST.Node = BST.Node(None, 17, Color.Red,c, BST.Empty(p))
+    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None, c, BST.Empty(p))
     lazy val c: BST.Node = BST.leaf(p, 10)
     val expectedViolation = Violation.BendedGPC(c)
     assert(g.violation(10).contains(expectedViolation))
@@ -69,7 +69,7 @@ class BSTSuite extends AnyFunSuite {
 
   ignore("Resolve Violation: No red uncle bended GPC"){
     lazy val g = BST.root(5).updatedRight(p)
-    lazy val p: BST.Node = BST.Node(None, 17, Color.Red,c, BST.Empty(p))
+    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None,c, BST.Empty(p))
     lazy val c: BST.Node = BST.leaf(p, 10)
     val expectedViolation = Violation.BendedGPC(c)
     assert(g.violation(10).contains(expectedViolation))

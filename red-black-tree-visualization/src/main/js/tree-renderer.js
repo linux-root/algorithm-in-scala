@@ -59,6 +59,7 @@ export class TreeRenderer {
     return {
       value: node.value,
       color: node.color === "Red" ? "red" : "black",
+      label: node.label || '',
       children: children
     };
   }
@@ -85,6 +86,13 @@ export class TreeRenderer {
       .append('path')
       .attr('class', 'link')
       .style('opacity', d => d.target.data.isInvisible ? 0 : 1)
+      .style('stroke', d => {
+        // Only make link blue if both source and target nodes have labels
+        const sourceHasLabel = d.source.data.label && d.source.data.label !== '';
+        const targetHasLabel = d.target.data.label && d.target.data.label !== '';
+        return (sourceHasLabel && targetHasLabel) ? '#3b82f6' : '#374151';
+      })
+      .style('stroke-width', '2px')
       .attr('d', d => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`);
 
     // Create node groups
@@ -125,13 +133,25 @@ export class TreeRenderer {
     nodes.append('circle')
       .attr('r', this.config.nodeRadius)
       .style('fill', d => d.data.color)
+      .style('stroke', d => d.data.label ? '#3b82f6' : 'none') // Blue border for labeled nodes
+      .style('stroke-width', d => d.data.label ? '3px' : '0')
       .style('filter', 'url(#drop-shadow)');
 
-    // Add labels
+    // Add value labels
     nodes.append('text')
       .attr('dy', '0.35em')
       .attr('text-anchor', 'middle')
       .text(d => d.data.value);
+
+    // Add node labels (if present)
+    nodes.filter(d => d.data.label)
+      .append('text')
+      .attr('dy', '-1.5em')
+      .attr('text-anchor', 'middle')
+      .attr('class', 'label')
+      .style('font-weight', 'bold')
+      .style('fill', '#3b82f6')
+      .text(d => d.data.label);
   }
 
   /**

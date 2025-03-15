@@ -74,14 +74,26 @@ case class TreeRenderer(containerId: String) {
       js.Dynamic.literal(
         $type = "Empty"
       )
-    case BST.Node(_, value, color, left, right) => 
-      js.Dynamic.literal(
-        $type = "Node",
-        value = value,
-        color = color.toString,
-        left = toJs(left),
-        right = toJs(right)
-      )
+    case BST.Node(_, value, color, label, left, right) => 
+      label match {
+        case None => 
+           js.Dynamic.literal(
+             $type = "Node",
+             value = value,
+             color = color.toString,
+             left = toJs(left),
+             right = toJs(right)
+           )
+        case Some(l) => 
+          js.Dynamic.literal(
+            $type = "Node",
+            value = value,
+            color = color.toString,
+            label = l,
+            left = toJs(left),
+            right = toJs(right)
+          )
+      }
   }
 
   def renderCmd(treeOpt: Option[BST]): Cmd[IO, Nothing] = {
