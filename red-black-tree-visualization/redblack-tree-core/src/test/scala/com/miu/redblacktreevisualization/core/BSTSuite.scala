@@ -18,8 +18,6 @@ class BSTSuite extends AnyFunSuite {
     lazy val g = BST.root(5).updatedRight(p)
     lazy val p: BST.Node = BST.Node(None, 17, Color.Red, BST.empty(p), c)
     lazy val c: BST.Node = BST.leaf(p, 42)
-
-    println(g.toString())
     assert(g.findNode(42).contains(c))
   }
 
