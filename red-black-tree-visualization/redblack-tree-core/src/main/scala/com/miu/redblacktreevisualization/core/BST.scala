@@ -5,6 +5,9 @@ import com.miu.redblacktreevisualization.core.BST.Violation.StraightGPC
 import com.miu.redblacktreevisualization.core.BST.Violation.BendedGPC
 
 sealed trait BST {
+
+  def updatedColor(newColor: Color): BST
+
   def updatedLeft(left : => BST): BST
 
   def updatedRight(right : => BST): BST
@@ -24,15 +27,42 @@ sealed trait BST {
   def resolve(violation: Violation): BST = 
     violation match {
       case Violation.RedRoot(Node(parent, value, color, left, right)) =>
-        //TODO: update parent color
-        // update current node color to black
         lazy val node: Node = Node(parent, value, Color.Black, left.updatedParent(node), right.updatedParent(node))
         node
   
-      case _ => 
-        //TODO: implement
-        this
+      case Violation.RedUncle(node) => 
+        // what should we do?
+        // change uncle and parent to black
+        // change grand parent G to red
+        // repeat
+        node.parent.flatMap(_.parent) match
+          case Some(grandparent) =>
+            if grandparent.isRoot then
+              grandparent
+                .updatedRight(grandparent.right.updatedColor(Color.Black))
+                .updatedLeft(grandparent.left.updatedColor(Color.Black))
+            else this
+            
+          case _ =>
+            this
+
+
+      case _ => this
     }
+
+  def uncle: Option[Node] = 
+   this.parent match
+      case None => None
+      case Some(parent) =>
+        parent.parent match
+          case None => None
+          case Some(grandparent) =>
+            if parent == grandparent.left then grandparent.right match
+                  case uncle: Node => Some(uncle)
+                  case _ => None
+            else grandparent.left match
+              case uncle: Node => Some(uncle)
+              case _ => None
   
   def violation(lastInsertedValue: Int): Option[Violation] = {
     // Find the last inserted node,
@@ -40,17 +70,6 @@ sealed trait BST {
     // if parent is red, check if it's uncle is red
     // if it's uncle is red, return RedUncle
     //
-    def getUncle(node: Node): Option[Node] = node.parent match
-      case None => None
-      case Some(parent) => parent.parent match
-        case None => None
-        case Some(grandparent) =>
-          if grandparent.left == parent then grandparent.right match
-            case uncle @ Node(_, _, _, _, _) => Some(uncle)
-            case Empty(_) => None
-          else grandparent.left match
-            case uncle @ Node(_, _, _, _, _) => Some(uncle)
-            case Empty(_) => None
 
     // NOTE: we assume that lastInsertedValue is RED
     findNode(lastInsertedValue) match
@@ -63,7 +82,7 @@ sealed trait BST {
           case None => None
           case Some(parent) if parent.color == Color.Red =>
             // Check for RedUncle violation
-            getUncle(node) match
+           node.uncle match
               case Some(uncle) if uncle.color == Color.Red =>
                 Some(Violation.RedUncle(node))
               case _ =>
@@ -136,6 +155,8 @@ object BST {
     }
     case class Empty(private val _parent: Node) extends BST {
 
+      override def updatedColor(newColor: Color): BST = this //Empty can't change its color
+
       override def parent: Option[Node] = Some(_parent)
 
       override def findNode(value: Int): Option[Node] = None
@@ -179,15 +200,19 @@ object BST {
         result
       }
 
-      def updatedLeft(newLeft : => BST): BST = {
+      override def updatedLeft(newLeft : => BST): BST = {
         lazy val result: Node = new Node(parent, value, color, newLeft.updatedParent(result), right.updatedParent(result))
         result
      }
 
-      def updatedRight(newRight : => BST): BST = {
+      override def updatedRight(newRight : => BST): BST = {
         lazy val result: Node = new Node(parent, value, color, left.updatedParent(result), newRight.updatedParent(result))
         result
       }
+
+      def updatedColor(newColor: Color): BST =
+        lazy val result: Node = new Node(parent, value, newColor, left.updatedParent(result), right.updatedParent(result))
+        result
 
       def insert(newValue: Int): BST = {
          if newValue == value then this

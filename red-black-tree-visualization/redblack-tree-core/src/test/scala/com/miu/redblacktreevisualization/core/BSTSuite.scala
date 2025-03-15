@@ -37,4 +37,12 @@ class BSTSuite extends AnyFunSuite {
     assert(g.violation(10).contains(expectedViolation))
   }
 
+  test("Resolve violation: Red uncle"){
+    val lastInsertedNode = 50
+    val tree = BST.root(42).insert(17).insert(47).insert(lastInsertedNode)
+    val violation = tree.violation(lastInsertedNode)
+    assert(violation.nonEmpty)
+    assert(tree.resolve(violation.get).violation(lastInsertedNode).isEmpty)
+  }
+
 }
