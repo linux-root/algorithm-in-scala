@@ -120,6 +120,14 @@ object BST {
     }
 
     enum Violation {
+      override def toString(): String = {
+        this match {
+          case RedUncle(_) => "RedUncle"
+          case StraightGPC(_) => "StraightGPC"
+          case BendedGPC(_) => "BendedGPC"
+          case RedRoot(_) => "RedRoot"
+        }
+      }
       def node: Node
       case RedUncle(node: Node)
       case StraightGPC(node: Node)

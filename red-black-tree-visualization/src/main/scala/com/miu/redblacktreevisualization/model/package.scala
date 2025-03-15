@@ -23,13 +23,13 @@ object model {
     case ToggleDarkMode
   }
 
-  case class Model(currentPage: Page, bst: BST, treeView: Option[TreeRenderer], violation: Option[BST.Violation], isDarkMode: Boolean) {
+  case class Model(currentPage: Page, bst: Option[BST], treeView: Option[TreeRenderer], violation: Option[BST.Violation], isDarkMode: Boolean) {
     def resolveViolation: Model =
       violation match {
         case None =>
           this
         case Some(v)=>
-          copy(bst = bst.resolve(v), violation = None)
+          copy(bst = bst.map(_.resolve(v)), violation = None)
       }
 
     def toggleDarkMode: Model =
@@ -45,7 +45,7 @@ object model {
 
 
   object Model {
-    val init: Model = Model(Page.Home, BST.Empty(None), None, None, isDarkMode = false)
+    val init: Model = Model(Page.Home, None, None, None, isDarkMode = false)
 
   }
 }

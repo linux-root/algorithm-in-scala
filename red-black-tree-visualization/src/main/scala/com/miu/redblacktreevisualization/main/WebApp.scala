@@ -19,6 +19,7 @@ import cats.syntax.*
 import com.miu.redblacktreevisualization.view.interopjs.TreeRenderer
 import scala.util.Random
 import cats.effect.kernel.Sync
+import com.miu.redblacktreevisualization.core.BST
 
 @JSImport("resources/index.css", JSImport.Default)
 @js.native
@@ -52,8 +53,8 @@ object WebApp extends TyrianIOApp[Msg, Model]:
       (model.copy(treeView = Some(new TreeRenderer("tuesday"))), Cmd.None)
 
     case Msg.Insert(value) =>
-      val updatedTree = model.bst.insert(value)
-      val updatedModel = model.copy(bst = updatedTree).copy(violation = updatedTree.violation(value))
+      val updatedTree = model.bst.map(_.insert(value)).getOrElse(BST.root(value))
+      val updatedModel = model.copy(bst = Some(updatedTree)).copy(violation = updatedTree.violation(value))
       (updatedModel, updatedModel.refreshTreeCmd |+| PrettyLogger.info(s"$updatedTree") )
 
     case Msg.ResolveViolation =>

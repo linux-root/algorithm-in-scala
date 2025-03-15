@@ -84,7 +84,11 @@ case class TreeRenderer(containerId: String) {
       )
   }
 
-  def renderCmd(tree: BST): Cmd[IO, Nothing] = {
-    Cmd.SideEffect(renderer.render(toJs(tree)))
+  def renderCmd(treeOpt: Option[BST]): Cmd[IO, Nothing] = {
+    treeOpt match
+      case None =>
+        Cmd.None
+      case Some(tree) =>
+        Cmd.SideEffect(renderer.render(toJs(tree)))
   }
 }
