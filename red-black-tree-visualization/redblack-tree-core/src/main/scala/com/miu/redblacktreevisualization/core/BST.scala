@@ -115,7 +115,7 @@ sealed trait BST {
       case None => None
       case Some(node) =>
         // Check for RedRoot violation
-        if node.parent.isEmpty && node.color == Color.Red then
+        if node.isRoot && node.color == Color.Red then
           Some(Violation.RedRoot(node))
         else node.parent match
           case None => None
