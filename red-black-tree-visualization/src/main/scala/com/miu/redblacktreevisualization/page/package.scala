@@ -21,5 +21,5 @@ package object page {
     def doNavigate(model: Model): Cmd[IO, Msg] = beforeEnter(model) |+| Cmd.emit(Msg.DoNavigate(this))
 
 
-    case Home       extends Page("/", model => BSTView(model.bst, model.violation), _ => Cmd.emitAfterDelay(Msg.CreateTreeView, 100.millis))
+    case Home       extends Page("/", state => BSTView(state), _ => Cmd.emitAfterDelay(Msg.CreateTreeView, 100.millis))
 }

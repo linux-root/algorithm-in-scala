@@ -20,6 +20,8 @@ import com.miu.redblacktreevisualization.view.interopjs.TreeRenderer
 import scala.util.Random
 import cats.effect.kernel.Sync
 import com.miu.redblacktreevisualization.core.BST
+import scala.util.Success
+import scala.util.Try
 
 @JSImport("resources/index.css", JSImport.Default)
 @js.native
@@ -63,6 +65,22 @@ object WebApp extends TyrianIOApp[Msg, Model]:
 
     case Msg.InsertRandom =>
       (model, Cmd.Run(Sync[IO].delay(Random.nextInt(1000)))(Msg.Insert(_)))
+
+    case Msg.UpdateInputValue(value)=>
+      (model.copy(input = value),Cmd.None)
+
+    case Msg.InsertInput =>
+      val (updatedModel, cmd) = Try(model.input.toInt) match {
+        case Success(number) =>
+          (model.copy(input = ""), Cmd.emit(Msg.Insert(number)))
+        case _ =>
+          (model, Cmd.None)
+      }
+      (updatedModel, cmd)
+
+    case Msg.ResetTree =>
+      val updatedModel = model.copy(bst = None, violation = None)
+      (updatedModel, Cmd.emit(Msg.CreateTreeView))
 
     case Msg.ToggleDarkMode =>
       (model.toggleDarkMode, Cmd.None)
