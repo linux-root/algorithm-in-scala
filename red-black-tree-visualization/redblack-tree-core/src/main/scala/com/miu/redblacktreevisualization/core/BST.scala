@@ -37,6 +37,7 @@ sealed trait BST {
         // repeat
         node.parent.flatMap(_.parent) match
           case Some(grandparent) =>
+            //TODO: solve case grandparent is not root
             if grandparent.isRoot then
               grandparent
                 .updatedRight(grandparent.right.updatedColor(Color.Black))
