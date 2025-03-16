@@ -11,18 +11,18 @@ import com.miu.redblacktreevisualization.core.BST
 
 @js.native
 trait TreeRendererOptions extends js.Object {
-  var width: Int = js.native
-  var height: Int = js.native
-  var nodeRadius: Int = js.native
+  var width: Int            = js.native
+  var height: Int           = js.native
+  var nodeRadius: Int       = js.native
   var margin: MarginOptions = js.native
 }
 
 @js.native
 trait MarginOptions extends js.Object {
-  var top: Int = js.native
-  var right: Int = js.native
+  var top: Int    = js.native
+  var right: Int  = js.native
   var bottom: Int = js.native
-  var left: Int = js.native
+  var left: Int   = js.native
 }
 
 object TreeRendererOptions {
@@ -61,30 +61,26 @@ object MarginOptions {
 @js.native
 @JSImport("js/tree-renderer.js", "TreeRenderer")
 class JsTreeRenderer(containerId: String, options: TreeRendererOptions = null) extends js.Object {
-  def render(bst: js.Object): Unit = js.native //FIXME:
+  def render(bst: js.Object): Unit          = js.native
   def resize(width: Int, height: Int): Unit = js.native
 }
 
-
 case class TreeRenderer(containerId: String) {
-  private val renderer = new JsTreeRenderer(containerId, null)
+  private val options  = TreeRendererOptions(800, 800)
+  private val renderer = new JsTreeRenderer(containerId, options)
 
   private def toJs(tree: BST): js.Object = tree match {
-    case BST.Empty(_) => 
-      js.Dynamic.literal(
-        $type = "Empty"
-      )
-    case BST.Node(_, value, color, label, left, right) => 
+    case BST.Node(_, value, color, label, left, right) =>
       label match {
-        case None => 
-           js.Dynamic.literal(
-             $type = "Node",
-             value = value,
-             color = color.toString,
-             left = toJs(left),
-             right = toJs(right)
-           )
-        case Some(l) => 
+        case None =>
+          js.Dynamic.literal(
+            $type = "Node",
+            value = value,
+            color = color.toString,
+            left = toJs(left),
+            right = toJs(right)
+          )
+        case Some(l) =>
           js.Dynamic.literal(
             $type = "Node",
             value = value,
@@ -94,13 +90,17 @@ case class TreeRenderer(containerId: String) {
             right = toJs(right)
           )
       }
+
+    case _ =>
+      js.Dynamic.literal(
+        $type = "Empty"
+      )
   }
 
-  def renderCmd(treeOpt: Option[BST]): Cmd[IO, Nothing] = {
+  def renderCmd(treeOpt: Option[BST]): Cmd[IO, Nothing] =
     treeOpt match
       case None =>
         Cmd.None
       case Some(tree) =>
         Cmd.SideEffect(renderer.render(toJs(tree)))
-  }
 }
