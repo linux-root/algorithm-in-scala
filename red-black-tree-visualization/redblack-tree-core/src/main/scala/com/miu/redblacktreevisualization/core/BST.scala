@@ -62,8 +62,9 @@ sealed trait BST {
       } else this
 
     violation match {
-      case Violation.RedRoot(Node(parent, value, color, label, left, right)) =>
-        lazy val node: Node = Node(parent, value, Color.Black, label, left.updatedParent(node), right.updatedParent(node))
+
+      case Violation.RedRoot(root) =>
+        lazy val node: Node = Node(parent, root.value, Color.Black, label, root.left.updatedParent(root), root.updatedParent(root))
         node
 
       case Violation.RedUncle(node) =>
@@ -97,6 +98,8 @@ sealed trait BST {
           case _ =>
             // TODO: no GGP
             this
+      case  Violation.BendedGPC(node) =>
+            ???
     }
 
   def uncle: Option[Node] =
