@@ -41,7 +41,21 @@ object BSTView:
   }
 
   def explaination(state: Model): Html[Msg] = {
-    div()
+    div(cls := "flex flex-col gap-4")(
+      h2(cls := "text-2xl font-semibold text-green-800 mb-4")("The wholeness of this lesson"),
+      p(cls := "text-gray-700 leading-relaxed")(
+        """Red-black trees provide a solution to the
+          |problem of unacceptably slow worst case
+          |performance of binary search trees. This is
+          |accomplished by introducing a new element:
+          |nodes of the tree are colored red or black,
+          |adhering to the balance condition for red-black
+          |trees. The balance condition is maintained""".stripMargin
+      ),
+      div(cls := "mt-4 text-sm text-gray-500 italic")(
+        "Text credit: Professor Prem Nair"
+      )
+    )
   }
 
   def controlPanel(state: Model): Html[Msg] =
