@@ -42,7 +42,7 @@ object BSTView:
 
   def explaination(state: Model): Html[Msg] = {
     div(cls := "flex flex-col gap-4")(
-      h2(cls := "text-2xl font-semibold text-green-800 mb-4")("The wholeness of this lesson"),
+      h2(cls := "text-2xl font-semibold text-green-800 mb-4")("Wholeness of this lesson"),
       p(cls := "text-gray-700 leading-relaxed")(
         """Red-black trees provide a solution to the
           |problem of unacceptably slow worst case
