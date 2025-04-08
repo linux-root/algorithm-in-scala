@@ -20,7 +20,7 @@
 
           # Hash for the dependencies - will fail the first time with the correct hash
           # Replace with the hash from the error message
-          depsSha256 = "sha256-change=";
+          depsSha256 = "sha256-HVYJvzWT3HBrq1a+sSPDf80L+xSXFnIBhzO0IvhkuHA=";
           
           # SBT command to build the site
           buildPhase = ''
