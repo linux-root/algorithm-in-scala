@@ -2,6 +2,7 @@ package com.miu.redblacktreevisualization.core
 
 import com.miu.redblacktreevisualization.core.BST.*
 import com.miu.redblacktreevisualization.core.BST.Violation.*
+import scala.annotation.threadUnsafe
 
 sealed trait BST {
 
@@ -10,6 +11,8 @@ sealed trait BST {
   def updatedColor(newColor: Color): BST
 
   def updatedLeft(left: => BST): BST
+
+  def updatedWhere(key: Int, updater: Node => Node): BST
 
   def updatedRight(right: => BST): BST
 
@@ -64,7 +67,7 @@ sealed trait BST {
     violation match {
 
       case Violation.RedRoot(root) =>
-        lazy val node: Node = Node(parent, root.value, Color.Black, label, root.left.updatedParent(root), root.updatedParent(root))
+        lazy val node: Node = Node(parent, root.value, Color.Black, label, root.left.updatedParent(root), root.right.updatedParent(root))
         node
 
       case Violation.RedUncle(node) =>
@@ -98,8 +101,18 @@ sealed trait BST {
           case _ =>
             // TODO: no GGP
             this
-      case  Violation.BendedGPC(node) =>
-            ???
+      case  Violation.BendedGPC(node, isLR) =>
+        // child take care parent and grandparent
+        node.parent.flatMap(_.parent) match {
+          case Some(grandparent) =>
+            val updateG : Node => Node = gnode => {
+              ???
+            }
+            this
+          case _ =>
+            this
+        }
+        this
     }
 
   def uncle: Option[Node] =
@@ -143,9 +156,9 @@ sealed trait BST {
                   // Check for StraightGPC violation
                   parent.parent match {
                     case Some(grandparent) if parent == grandparent.left =>
-                      if (node == parent.left) then Some(LStraightGPC(node)) else Some(BendedGPC(node))
+                      if (node == parent.left) then Some(LStraightGPC(node)) else Some(BendedGPC(node, isLR = true))
                     case Some(grandparent) if parent == grandparent.right =>
-                      if (node == parent.right) then Some(RStraightGPC(node)) else Some(BendedGPC(node))
+                      if (node == parent.right) then Some(RStraightGPC(node)) else Some(BendedGPC(node, isLR = false))
                     case _ =>
                       None
                   }
@@ -186,7 +199,7 @@ object BST {
     lazy val result: Node = Node(
       None,
       value,
-      Color.Black,
+      Color.Red,
       None,
       left.map(_.updatedParent(result)).getOrElse(BST.Empty(result)),
       right.map(_.updatedParent(result)).getOrElse(BST.Empty(result))
@@ -203,17 +216,29 @@ object BST {
         case RedUncle(_)     => "RedUncle"
         case LStraightGPC(_) => "LStraightGPC"
         case RStraightGPC(_) => "RStraightGPC"
-        case BendedGPC(_)    => "BendedGPC"
+        case BendedGPC(_, isLR)    => s"${if isLR then "LR" else "RL"}BendedGPC"
         case RedRoot(_)      => "RedRoot"
+      }
+
+    def resolveDetail: String =
+      this match {
+        case RedUncle(_)     => 
+          "Change Parent P, Uncle U to BLACK Change Grand Parent G to RED (Recursively do it until no two consecutive reds)"
+        case LStraightGPC(_) => "Grandparent(G) is old, now Parent(P) will take care both Child(C) and Grandparent(G)"
+        case RStraightGPC(_) => "Grandparent(G) is old, now Parent(P) will take care both Child(C) and Grandparent(G)"
+        case BendedGPC(_, isLR)    => s"Child(C) will take care of its Parent(P) and Grandparent(G)"
+        case RedRoot(_)      => "Change root color to Black"
       }
     def node: Node
     case RedUncle(node: Node)
     case LStraightGPC(node: Node)
     case RStraightGPC(node: Node)
-    case BendedGPC(node: Node)
+    case BendedGPC(node: Node, isLR: Boolean)
     case RedRoot(node: Node)
   }
   case class Empty(private val _parent: Node) extends BST {
+
+    override def updatedWhere(key: Int, updater: Node => Node): BST = this
 
     override def withLabel(newLabel: String): BST = this
 
@@ -246,6 +271,11 @@ object BST {
   }
 
   class Node(p: => Option[Node], val value: Int, override val color: Color, override val label: Option[String], l: => BST, r: => BST) extends BST {
+
+    override def updatedWhere(key: Int, updater: Node => Node): BST =
+      if key == value then updater(this) 
+        else if  key < value then updatedLeft(left.updatedWhere(key, updater)) 
+            else updatedRight(right.updatedWhere(key, updater))
 
     override def isEmpty: Boolean = false
 

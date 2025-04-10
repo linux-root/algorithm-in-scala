@@ -34,7 +34,7 @@ class BSTSuite extends AnyFunSuite {
     lazy val g = BST.root(5).updatedRight(p)
     lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None, c, BST.Empty(p))
     lazy val c: BST.Node = BST.leaf(p, 10)
-    val expectedViolation = Violation.BendedGPC(c)
+    val expectedViolation = Violation.BendedGPC(c, isLR = false)
     assert(g.violation(10).contains(expectedViolation))
   }
 
@@ -67,12 +67,14 @@ class BSTSuite extends AnyFunSuite {
     assert(resolvedTree.violation(lastInsertedNode).isEmpty)
   }
 
-  ignore("Resolve Violation: No red uncle bended GPC"){
-    lazy val g = BST.root(5).updatedRight(p)
-    lazy val p: BST.Node = BST.Node(None, 17, Color.Red, None,c, BST.Empty(p))
-    lazy val c: BST.Node = BST.leaf(p, 10)
-    val expectedViolation = Violation.BendedGPC(c)
-    assert(g.violation(10).contains(expectedViolation))
+  test("Resolve Violation: No red uncle bended GPC"){
+    val lastInsertedNode = 10
+    lazy val tree = BST.root(5).insert(17).insert(lastInsertedNode)
+    val violation = tree.violation(lastInsertedNode)
+    assert(violation.nonEmpty)
+    val resolvedTree = tree.resolve(violation.get)
+    println(resolvedTree)
+    assert(resolvedTree.violation(lastInsertedNode).isEmpty)
   }
 
 

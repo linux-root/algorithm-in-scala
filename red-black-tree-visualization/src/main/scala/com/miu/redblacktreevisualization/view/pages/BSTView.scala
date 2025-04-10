@@ -54,6 +54,38 @@ object BSTView:
       ),
       div(cls := "mt-4 text-sm text-gray-500 italic")(
         "Text credit: Professor Prem Nair"
+      ),
+      
+      // Current violation section
+      div(cls := "mt-8 pt-6 border-t border-gray-200")(
+        h3(cls := "text-xl font-semibold text-green-700 mb-3")("Current Violation"),
+        div(cls := "bg-gray-50 p-4 rounded-lg")(
+          state.violation match {
+            case Some(violation) => 
+              div(cls := "space-y-3")(
+                p(cls := "font-medium text-gray-800")(s"Type: ${violation.toString.split('(').head}"),
+                p(cls := "text-gray-700")(
+                  """This violation occurs when a red-black tree property is broken.
+                    |The system has detected an issue that needs to be resolved to
+                    |maintain the tree's balance and performance characteristics.""".stripMargin
+                ),
+                // Resolution explanation
+                div(cls := "mt-4")(
+                  h4(cls := "text-lg font-medium text-green-700 mb-2")("How to resolve:"),
+                  p(cls := "bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md text-gray-800 leading-relaxed")(
+                    violation.resolveDetail
+                  )
+                ),
+                div(cls := "mt-2 p-3 bg-orange-50 border-l-4 border-orange-500 text-orange-700")(
+                  "Use the 'Resolve' button in the control panel to fix this violation and restore the tree properties."
+                )
+              )
+            case None =>
+              p(cls := "text-gray-600")(
+                "No violations detected. The tree currently satisfies all red-black properties."
+              )
+          }
+        )
       )
     )
   }
@@ -61,18 +93,20 @@ object BSTView:
   def controlPanel(state: Model): Html[Msg] =
     val violation = state.violation
     val currentInputValue = state.input
+    val hasViolation = violation.isDefined
+    
     div(cls := "flex flex-col gap-4 bg-white rounded-lg shadow-md p-6 h-full")(
       // Violation status/resolve section
       div(
         cls := "w-full p-4 rounded-lg transition-colors " + 
-          (if (violation.isDefined) "bg-orange-50" else "bg-gray-50")
+          (if (hasViolation) "bg-orange-50" else "bg-gray-50")
       )(
         violation match {
           case Some(n) => 
             button(
               cls := "w-full px-4 py-3 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors", 
               onClick(Msg.ResolveViolation)
-            )(s"Resolve ${n}(${n.node.value})")
+            )(s"Resolve violation")
           case None => 
             div(cls := "text-gray-600 text-center")("No violations found")
         }
@@ -81,19 +115,37 @@ object BSTView:
       // Main controls section
       div(cls := "flex flex-col gap-4 w-full")(
         button(
-          cls := "w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors",
-          onClick(Msg.InsertRandom)
+          cls := s"w-full px-4 py-3 rounded-md transition-colors ${
+            if (hasViolation) 
+              "bg-gray-400 text-gray-200 cursor-not-allowed" 
+            else 
+              "bg-green-600 text-white hover:bg-green-700"
+          }",
+          onClick(Msg.InsertRandom),
+          disabled(hasViolation)
         )("Insert Random"),
         
         div(cls := "flex flex-col gap-3 w-full")(
           input(
-            cls := "w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
+            cls := s"w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none ${
+              if (hasViolation) 
+                "bg-gray-100 text-gray-400" 
+              else 
+                "focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            }",
             value := currentInputValue,
-            onChange(Msg.UpdateInputValue(_))
+            onChange(Msg.UpdateInputValue(_)),
+            disabled(hasViolation)
           ),
           button(
-            cls := "w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors",
-            onClick(Msg.InsertInput)
+            cls := s"w-full px-4 py-3 rounded-md transition-colors ${
+              if (hasViolation) 
+                "bg-gray-400 text-gray-200 cursor-not-allowed" 
+              else 
+                "bg-green-600 text-white hover:bg-green-700"
+            }",
+            onClick(Msg.InsertInput),
+            disabled(hasViolation)
           )("Insert")
         )
       )
